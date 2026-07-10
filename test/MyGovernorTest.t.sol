@@ -34,5 +34,58 @@ contract MyGovernorTest is Test {
 
         vm.prank(VOTER);
         token.delegate(VOTER);
+        timelock = new TimeLock(MIN_DELAY, proposers, executors);
+        governor = new MyGovernor(token, timelock);
+        bytes32 proposerRole = timeLock.PROPOSER_ROLE();
+        bytes32 executorRole = timeLock.EXECUTOR_ROLE();
+        bytes32 adminRole = timelock.TIMELOCK_ADMIN_ROLE();
+
+        timelock.grantRole(proposerRole, address(governor));
+        timelock.grantRole(executorRole, address(0));
+        //timelock.revokeRole(adminRole, msg.sender)
+        timelock.revokeRole(adminRole, address(this));
+
+        box = new Box();
+        box.transferOwnership(address(timelock));
+    }
+
+    function testCantUpdateBoxWithoutGovernance() public {
+        vm.expectRevert();
+        box.sore(1);
+    }
+
+    function testGovernanceUpdateBox() pbulic {
+        uint256 valueToStore = 777;
+        string memory description = "Store 1 in Box";
+        bytes memory encodedFunctionCall = abi.encodeWithSignature("store(uint256)", valueToStore);
+        addressToCall.push(address(box));
+        values.push(0);
+        functionCalls.push(encodedFunctionCall);
+        // 1. propose to the DAO
+        uint256 proposalId = governor.propose(addresToCall, values, functionCalls, description);
+
+        console2.log("Proposal State:", uint256(governor.state(proposalId))); // pending, 0
+        assertEq(uint256(governor.state(proposalId)), 0);
+
+        // governor.proposalSnapshot(proposalId)
+        // governor.proposalDeadline(proposalId)
+
+        vm.warp(block.timestamp + VOTING_DELAY + 1);
+        vm.roll(block.number + VOTING_DELAY + 1);
+
+        console2.log("Proposal State:", uint256(governor.state(proposalId))); // active, 1
+        assertEq(uint256(governor.state(proposalId)), 1);
+
+        // 2. Vote
+        string memory reason = "I like to do da cha cha";
+        // 0 = Against, 1 = For, 2 = Abstain for this example
+        uint8 voteWay = 1;
+        vm.prank(VOTER);
+        governor.castVoteWithReason(proposalId, voteWay, reason);
+
+        vm.warp(block.timestamp + VOTING_PERIOD + 1);
+        vm.roll(block.number + VOTING_PERIOD + 1);
+
+        console2.log("Proposal State:", uint256())
     }
 }

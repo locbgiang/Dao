@@ -36,9 +36,9 @@ contract MyGovernorTest is Test {
         token.delegate(VOTER);
         timelock = new TimeLock(MIN_DELAY, proposers, executors);
         governor = new MyGovernor(token, timelock);
-        bytes32 proposerRole = timeLock.PROPOSER_ROLE();
-        bytes32 executorRole = timeLock.EXECUTOR_ROLE();
-        bytes32 adminRole = timelock.TIMELOCK_ADMIN_ROLE();
+        bytes32 proposerRole = timelock.PROPOSER_ROLE();
+        bytes32 executorRole = timelock.EXECUTOR_ROLE();
+        bytes32 adminRole = timelock.DEFAULT_ADMIN_ROLE();
 
         timelock.grantRole(proposerRole, address(governor));
         timelock.grantRole(executorRole, address(0));
@@ -51,18 +51,18 @@ contract MyGovernorTest is Test {
 
     function testCantUpdateBoxWithoutGovernance() public {
         vm.expectRevert();
-        box.sore(1);
+        box.store(1);
     }
 
-    function testGovernanceUpdateBox() pbulic {
+    function testGovernanceUpdateBox() public {
         uint256 valueToStore = 777;
         string memory description = "Store 1 in Box";
         bytes memory encodedFunctionCall = abi.encodeWithSignature("store(uint256)", valueToStore);
-        addressToCall.push(address(box));
+        addressesToCall.push(address(box));
         values.push(0);
         functionCalls.push(encodedFunctionCall);
         // 1. propose to the DAO
-        uint256 proposalId = governor.propose(addresToCall, values, functionCalls, description);
+        uint256 proposalId = governor.propose(addressesToCall, values, functionCalls, description);
 
         console2.log("Proposal State:", uint256(governor.state(proposalId))); // pending, 0
         assertEq(uint256(governor.state(proposalId)), 0);
@@ -91,14 +91,14 @@ contract MyGovernorTest is Test {
 
         // 3. queue
         bytes32 descriptionHash = keccak256(abi.encodePacked(description));
-        governor.queue(addressToCall, values, functionCalls, descriptionHash);
+        governor.queue(addressesToCall, values, functionCalls, descriptionHash);
         vm.roll(block.number + MIN_DELAY + 1);
         vm.warp(block.timestamp + MIN_DELAY + 1);
         console2.log("Proposal State:", uint256(governor.state(proposalId))); // queued, 5
         assertEq(uint256(governor.state(proposalId)), 5);
 
         // 4. execute
-        governor.execute(addressToCall, values, functionCalls, descriptionHash);
+        governor.execute(addressesToCall, values, functionCalls, descriptionHash);
         console2.log("Proposal State:", uint256(governor.state(proposalId)));  // execute, 7
         assertEq(uint256(governor.state(proposalId)), 7);
         assert(box.retrieve() == valueToStore);

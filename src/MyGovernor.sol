@@ -3,14 +3,13 @@ pragma solidity ^0.8.18;
 
 import {Governor} from "@openzeppelin/contracts/governance/Governor.sol";
 import {GovernorSettings} from "@openzeppelin/contracts/governance/extensions/GovernorSettings.sol";
-import {GovernorCountSimple} from "@openzeppelin/contracts/governance/extensions/GovernorCountingSimple.sol";
+import {GovernorCountingSimple} from "@openzeppelin/contracts/governance/extensions/GovernorCountingSimple.sol";
 import {GovernorVotes} from "@openzeppelin/contracts/governance/extensions/GovernorVotes.sol";
 import {GovernorVotesQuorumFraction} from "@openzeppelin/contracts/governance/extensions/GovernorVotesQuorumFraction.sol";
 import {GovernorTimelockControl} from "@openzeppelin/contracts/governance/extensions/GovernorTimelockControl.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 
 import {IVotes} from "@openzeppelin/contracts/governance/utils/IVotes.sol";
-import {IGovernor} from "@openzeppelin/contracts/governance/IGovernor.sol";
 
 contract MyGovernor is 
     Governor,
@@ -30,18 +29,18 @@ contract MyGovernor is
 
     // The following functions are overrides required by Solidity
 
-    function votingDelay() public view override (IGovernor, GovernorSettings) returns (uint256) {
+    function votingDelay() public view override(Governor, GovernorSettings) returns (uint256) {
         return super.votingDelay();
     }
 
-    function votingPeriod() public view override(IGovernor, GovernorSettings) returns (uint256) {
+    function votingPeriod() public view override(Governor, GovernorSettings) returns (uint256) {
         return super.votingPeriod();
     }
 
     function quorum(uint256 blockNumber) 
         public 
         view
-        override (IGovernor, GovernorVotesQuorumFraction)
+        override(Governor, GovernorVotesQuorumFraction)
         returns (uint256)
     {
         return super.quorum(blockNumber);
@@ -61,7 +60,7 @@ contract MyGovernor is
         uint256[] memory values,
         bytes[] memory calldatas,
         string memory description
-    ) public override (Governor, IGovernor) returns (uint256) {
+    ) public override(Governor) returns (uint256) {
         return super.propose(targets, values, calldatas, description);
     }
 
@@ -69,14 +68,28 @@ contract MyGovernor is
         return super.proposalThreshold();
     }
 
-    function _execute(
+    function proposalNeedsQueuing(uint256 proposalId) public view override(Governor, GovernorTimelockControl) returns (bool) {
+        return super.proposalNeedsQueuing(proposalId);
+    }
+
+    function _queueOperations(
         uint256 proposalId,
         address[] memory targets,
         uint256[] memory values,
         bytes[] memory calldatas,
         bytes32 descriptionHash
-    ) internal override (Governor, GovernorTimelockControl) {
-        super._execute(proposalId, targets, values, calldatas, descriptionHash);
+    ) internal override(Governor, GovernorTimelockControl) returns (uint48) {
+        return super._queueOperations(proposalId, targets, values, calldatas, descriptionHash);
+    }
+
+    function _executeOperations(
+        uint256 proposalId,
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory calldatas,
+        bytes32 descriptionHash
+    ) internal override(Governor, GovernorTimelockControl) {
+        super._executeOperations(proposalId, targets, values, calldatas, descriptionHash);
     }
 
     function _cancel (
@@ -95,7 +108,7 @@ contract MyGovernor is
     function supportsInterface(bytes4 interfaceId) 
         public 
         view
-        override(Governor, GovernorTimelockControl)
+        override(Governor)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);

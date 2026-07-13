@@ -16,7 +16,7 @@ contract MyGovernorTest is Test {
 
     uint256 public constant MIN_DELAY = 3600; // 1 hour - after a vote passes, you have 1 hour before you can enact
     uint256 public constant QUORUM_PERCENTAGE = 4; // Need 4% of voters to pass
-    uint256 public constant VOTING_PERIOD = 50400 // this is how long voting lasts
+    uint256 public constant VOTING_PERIOD = 50400; // this is how long voting lasts
     uint256 public constant VOTING_DELAY = 1; // How many blocks till a proposal vote becomes active
 
     address[] proposers;
@@ -86,6 +86,21 @@ contract MyGovernorTest is Test {
         vm.warp(block.timestamp + VOTING_PERIOD + 1);
         vm.roll(block.number + VOTING_PERIOD + 1);
 
-        console2.log("Proposal State:", uint256())
+        console2.log("Proposal State:", uint256(governor.state(proposalId))); // succeeded, 4
+        assertEq(uint256(governor.state(proposalId)), 4);
+
+        // 3. queue
+        bytes32 descriptionHash = keccak256(abi.encodePacked(description));
+        governor.queue(addressToCall, values, functionCalls, descriptionHash);
+        vm.roll(block.number + MIN_DELAY + 1);
+        vm.warp(block.timestamp + MIN_DELAY + 1);
+        console2.log("Proposal State:", uint256(governor.state(proposalId))); // queued, 5
+        assertEq(uint256(governor.state(proposalId)), 5);
+
+        // 4. execute
+        governor.execute(addressToCall, values, functionCalls, descriptionHash);
+        console2.log("Proposal State:", uint256(governor.state(proposalId)));  // execute, 7
+        assertEq(uint256(governor.state(proposalId)), 7);
+        assert(box.retrieve() == valueToStore);
     }
 }

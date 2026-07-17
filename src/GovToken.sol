@@ -23,10 +23,15 @@ contract GovToken is ERC20, ERC20Permit, ERC20Votes {
     constructor() ERC20("My Token", "MTK") ERC20Permit("My Token") {}
 
     // the following functions are overrides required by solidity
+    // publicly mintable (no access control) - anyone can mint tokens
     function mint(address to, uint256 amount) public {
         _mint(to, amount);
     }
 
+    // required because both ERC20 and ERC20Votes define _update
+    // (the internal function that runs on every transfer/mint/burn) 
+    // ERC20Votes uses this hook to update voting power checkpoints whenever balances change
+    // super._update(...) ensures both parent implementation runs correctly
     function _update(address from, address to, uint256 amount) internal override(ERC20, ERC20Votes) {
         super._update(from, to, amount);
     }

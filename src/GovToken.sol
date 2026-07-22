@@ -36,7 +36,13 @@ contract GovToken is ERC20, ERC20Permit, ERC20Votes {
         super._update(from, to, amount);
     }
 
+    // both ERC20Permit and Nonces define nonces, so Solidity requires an explicit override
+    // to resolve the conflict
+    // Used to track permit signature nonces per address (prevents replay attacks)
     function nonces(address owner) public view override(ERC20Permit, Nonces) returns (uint256) {
         return super.nonces(owner);
     }
+
+    // Why thi smatters for a DAO
+    // this token designed plug directly into OpenZeppelin's Governor contract
 }

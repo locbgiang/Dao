@@ -11,14 +11,33 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
 
 import {IVotes} from "@openzeppelin/contracts/governance/utils/IVotes.sol";
 
+/**
+ * @title MyGovernor
+ * @author Loc Giang
+ * @notice This is the core DAO governance contract - it ties together the GovToken(voting power)
+ * and a TimelockController (execution delay) to let token holder propose, vote on, and execute
+ * on-chain actions (like calling Box.store()).
+ * 
+ * Governor - Base contract: proposal creation, voting, state machine
+ * GovernorSettings - Configurable voting delay, voting period, proposal threshold
+ * GovernorCountingSimple - Simple For/Against/Abstain vote counting
+ * GovernorVotes - Reads voting power from an IVotes token (your GovToken)
+ * GovernorVotesQuorumFraction - Quorum define as a % of total token supply
+ * GovernorTimelockControl - Routes proposal execution through a TimelockController (adds a delay
+ * + separates proposal passing from execution)
+ */
 contract MyGovernor is 
-    Governor,
+    Governor,   
     GovernorSettings,
     GovernorCountingSimple,
     GovernorVotes,
     GovernorVotesQuorumFraction,
     GovernorTimelockControl
 {
+    /**
+     * @param _token GovToken (must implement IVotes, satisfied by ERC20Votes)
+     * @param _timelock a TimelockController that will actually execute passed proposals
+     */
     constructor (IVotes _token, TimelockController _timelock) 
         Governor("MyGovernor")
         GovernorSettings(1, /* 1 block */ 50400, /* 1 week */ 0)

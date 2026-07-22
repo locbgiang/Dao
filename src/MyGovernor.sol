@@ -81,6 +81,11 @@ contract MyGovernor is
         return super.quorum(blockNumber);
     }
 
+    // returns the current lifecycle stage of a proposal
+    // pending -active -canceled/defeated/succeeded - queue - execute
+    // Governor defines the base logic
+    // GovernorTimelockControl overrides it to add the queue state -
+    // checking whether the operation has been queued/executed in TimelockController
     function state(uint256 proposalId) 
         public 
         view
@@ -89,7 +94,7 @@ contract MyGovernor is
     {
         return super.state(proposalId);
     } 
-
+`
     function propose (
         address[] memory targets,
         uint256[] memory values,

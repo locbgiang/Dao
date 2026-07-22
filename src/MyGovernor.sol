@@ -26,6 +26,16 @@ import {IVotes} from "@openzeppelin/contracts/governance/utils/IVotes.sol";
  * GovernorTimelockControl - Routes proposal execution through a TimelockController (adds a delay
  * + separates proposal passing from execution)
  */
+
+/**
+ * How the whole DAO flow works together
+ * 1. Token holder delegates voting power (GovToken.delegate())
+ * 2. Anyone calls governor.propose(targets, values, calldatas, description)
+ *      - e.g., targets=[Box], calldatas=[abi.encodeCall(Box.store, (42))]
+ * 3. After votingDelay, voting opens for votingPeriod blocks
+ * Holders call governor.castVote[proposalId, support]
+ * 4. If quorum reached & majority "For" - proposal succeeds
+ */
 contract MyGovernor is 
     Governor,   
     GovernorSettings,
@@ -37,6 +47,12 @@ contract MyGovernor is
     /**
      * @param _token GovToken (must implement IVotes, satisfied by ERC20Votes)
      * @param _timelock a TimelockController that will actually execute passed proposals
+     * GovernorSettings(1, 50400, 0):
+     *      Voting delay: 1 block - how long after proposing before voting starts
+     *      Voting period: 50400 blocks (~1 week, assuming~12s blocks)
+     *      Proposal threshold: 0 - mininum votes needed to create a proposal (0 = anone can propose)
+     * GovernorVotesQuorumFraction(4) - quorum = 4% of total token supply (at proposal snapshot block)
+     * must vote for the proposal to be valid.
      */
     constructor (IVotes _token, TimelockController _timelock) 
         Governor("MyGovernor")

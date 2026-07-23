@@ -94,7 +94,7 @@ contract MyGovernor is
     {
         return super.state(proposalId);
     } 
-`
+`   
     function propose (
         address[] memory targets,
         uint256[] memory values,
@@ -112,6 +112,15 @@ contract MyGovernor is
         return super.proposalNeedsQueuing(proposalId);
     }
 
+    /**
+     * Called internally when someone invokes governor.queue(...) on
+     * a succeeded proposal
+     * 
+     * GovernorTimelockControl's implementation forwards the targets/values/calldatas to
+     * TimelockController.scheduleBatch(...) starting the timelock's mandatory delay countown
+     * 
+     * Returns a uint8 - the timestamp when the operation becomes executable 
+     */
     function _queueOperations(
         uint256 proposalId,
         address[] memory targets,
@@ -122,6 +131,12 @@ contract MyGovernor is
         return super._queueOperations(proposalId, targets, values, calldatas, descriptionHash);
     }
 
+    /**
+     * called internally when someone invokes governor.execute(...) after timelock delay has passed
+     * GovernorTimelockControl's version calls TimelockController itself as msg.sender
+     * This is why Box's owner should be set to the TimelockController address, not the Governor
+     * or an EOA
+     */
     function _executeOperations(
         uint256 proposalId,
         address[] memory targets,
@@ -132,6 +147,13 @@ contract MyGovernor is
         super._executeOperations(proposalId, targets, values, calldatas, descriptionHash);
     }
 
+    /**
+     * Allows canceling a proposal before it's executed (e.g. proposer cancels or it's canceled
+     * via governance rules)
+     * 
+     * GovernorTimelockControl's version also cancels the corresponding queue operation in the 
+     * TimelockController (ifit was already queued), keeping both systems in sync.
+     */
     function _cancel (
         address[] memory targets,
         uint256[] memory values,
